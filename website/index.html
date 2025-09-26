@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FRA Digital Atlas & DSS</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #e0f7fa;
+      color: #333;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 50px;
+      background: #fff;
+      border-bottom: 1px solid #ddd;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo img {
+      width: 40px;
+      height: 40px;
+    }
+    nav a {
+      margin: 0 15px;
+      text-decoration: none;
+      color: #333;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    nav a:hover {
+      color: #4da6ff;
+    }
+    .header-buttons {
+      display: flex;
+      gap: 10px;
+    }
+    .btn {
+      border: none;
+      padding: 8px 15px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .btn-signup {
+      background: #4da6ff;
+      color: #fff;
+    }
+    .btn-login {
+      background: #00d4a3;
+      color: #fff;
+    }
+
+    .hero {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 40px 80px;
+    }
+    .hero-text {
+      max-width: 50%;
+    }
+    .hero-text h1 {
+      font-size: 28px;
+      margin: 0;
+    }
+    .hero-text h1 span {
+      color: #4da6ff;
+    }
+    .hero-text p {
+      font-size: 16px;
+      line-height: 1.5;
+      margin: 20px 0;
+    }
+    .hero-buttons {
+      display: flex;
+      gap: 15px;
+      margin-top: 20px;
+    }
+    .btn-primary {
+      background: #4da6ff;
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 8px;
+      text-decoration: none;
+    }
+    .btn-secondary {
+      background: transparent;
+      border: 1px solid #4da6ff;
+      color: #4da6ff;
+      padding: 10px 20px;
+      border-radius: 8px;
+      text-decoration: none;
+    }
+    .hero img {
+      max-width: 400px;
+    }
+
+    #analysisChart {
+      width: 600px !important; /* adjust width */
+      height: 600px !important; /* adjust height */
+      margin: 20px auto; /* center it */
+    }
+
+    .map-analysis {
+      display: flex;
+      gap: 20px;
+      margin: 40px 80px;
+      max-width: 1200px;
+    }
+    .analysis-panel {
+      background: #fff;
+      padding: 20px;
+      box-sizing: border-box;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      flex: 1;
+      min-width: 300px;
+    }
+    .analysis-panel h2 {
+      margin-top: 0;
+      color: #333;
+    }
+
+    /* Tabs container */
+    .tabs {
+      flex: 1;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      display: flex;
+      flex-direction: column;
+      min-width: 300px;
+    }
+    .tabs-header {
+      display: flex;
+      border-bottom: 2px solid #4da6ff;
+    }
+    .tab-button {
+      flex: 1;
+      padding: 12px 0;
+      text-align: center;
+      cursor: pointer;
+      font-weight: 600;
+      background: #f0f4f8;
+      border: none;
+      outline: none;
+      transition: background-color 0.3s, border-bottom-color 0.3s;
+      border-bottom: 3px solid transparent;
+      user-select: none;
+    }
+    .tab-button.active {
+      background: #e6f0ff;
+      border-bottom-color: #4da6ff;
+      color: #2e86de;
+    }
+    .tab-content {
+      padding: 20px;
+      overflow-y: auto;
+      flex-grow: 1;
+      font-size: 16px;
+      color: #1b3a7a;
+    }
+    .tab-content ul {
+      padding-left: 20px;
+      margin: 0;
+    }
+    .tab-content li {
+      margin-bottom: 8px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">
+      <img src="logo.png" alt="Logo" />
+      <strong>FRA DSS Portal</strong>
+    </div>
+    <nav>
+      <a onclick="changeResource('Waterbodies')">Waterbodies</a>
+      <a onclick="changeResource('Forest')">Forest</a>
+      <a onclick="changeResource('GroundWater')">Groundwater</a>
+      <a onclick="changeResource('Farmland')">Farmland</a>
+      <a onclick="changeResource('AgriculturalLand')">Agricultural Land</a>
+    </nav>
+    <div class="header-buttons">
+      <button class="btn btn-signup">Sign Up</button>
+      <button class="btn btn-login">Login</button>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-text">
+      <h1><span>FRA DSS Portal</span> - Interactive Resource Insights</h1>
+      <p id="intro-text">
+        Welcome! Explore India’s forest and water resources with AI-analyzed
+        insights.
+      </p>
+      <div class="hero-buttons">
+        <a href="waterbodies_map.html" id="explore-btn" class="btn-primary"
+          >Explore Map</a
+        >
+        <a href="#" class="btn-secondary">Watch Intro Video</a>
+      </div>
+    </div>
+    <div>
+      <img id="hero-img" src="waterbodies.jpg" alt="Resource Image" />
+    </div>
+  </section>
+
+  <!-- Replacing map with tabs + analysis panel side by side -->
+  <section class="map-analysis">
+    <div class="tabs">
+      <div class="tabs-header">
+        <button class="tab-button active" data-state="Madhya Pradesh">
+          Madhya Pradesh
+        </button>
+        <button class="tab-button" data-state="Odisha">Odisha</button>
+        <button class="tab-button" data-state="Telangana">Telangana</button>
+        <button class="tab-button" data-state="Tripura">Tripura</button>
+      </div>
+      <div class="tab-content" id="village-list">
+        <!-- Villages will be rendered here -->
+      </div>
+    </div>
+
+    <div class="analysis-panel">
+      <h2>AI Analyzed Data</h2>
+      <p id="analysis-text">
+        Waterbodies in India are showing significant seasonal variations.
+      </p>
+      <canvas id="analysisChart"></canvas>
+    </div>
+  </section>
+
+  <script>
+    // Hardcoded villages needing immediate attention (water distance > 1000 km)
+    const urgentVillages = {
+      "Madhya Pradesh": ["Baran Mahgawan", "Deosar", "Pushparajgarh"],
+      Odisha: ["Raiboga", "Kantha"],
+      Telangana: ["Buchi Reddy Palem", "Kaniki", "Kothuru", "Gubdi"],
+      Tripura: ["Boxanagar"],
+    };
+
+    const tabs = document.querySelectorAll(".tab-button");
+    const villageListDiv = document.getElementById("village-list");
+
+    function renderVillages(state) {
+      const villages = urgentVillages[state] || [];
+      if (villages.length === 0) {
+        villageListDiv.innerHTML = `<p>No villages need immediate attention in ${state}.</p>`;
+        return;
+      }
+      const listHtml = villages
+        .map((v) => `<li>${v}</li>`)
+        .join("");
+      villageListDiv.innerHTML = `<ul>${listHtml}</ul>`;
+    }
+
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        // Remove active class from all tabs
+        tabs.forEach((t) => {
+          t.classList.remove("active");
+        });
+        // Add active class to clicked tab
+        tab.classList.add("active");
+
+        // Render villages for selected state
+        renderVillages(tab.dataset.state);
+      });
+    });
+
+    // Initial render for first tab
+    renderVillages("Madhya Pradesh");
+
+    // States and their waterbody GeoJSON URLs (adjust paths as needed)
+    const waterbodyFiles = {
+      "Madhya Pradesh": "fixed_waterbodies.geojson",
+      Odisha: "fixed_waterbodies_od.geojson",
+      Telangana: "fixed_waterbodies_tl.geojson",
+      Tripura: "fixed_waterbodies_tp.geojson",
+    };
+
+    // Function to fetch GeoJSON and count features
+    async function fetchWaterbodyCount(url) {
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`Failed to load ${url}`);
+        const data = await res.json();
+        return data.features ? data.features.length : 0;
+      } catch (e) {
+        console.warn(e);
+        return 0;
+      }
+    }
+
+    // Load counts for all states and update chart
+    async function loadWaterbodyCountsAndUpdateChart() {
+      const states = Object.keys(waterbodyFiles);
+      const counts = [];
+
+      for (const state of states) {
+        const count = await fetchWaterbodyCount(waterbodyFiles[state]);
+        counts.push(count);
+      }
+
+      // Update chart data
+      analysisChart.data.datasets[0].data = counts;
+      analysisChart.update();
+
+      // Update analysis text based on counts and mock distance analysis
+      const totalWaterbodies = counts.reduce((a, b) => a + b, 0);
+      let analysisMsg = `Total waterbodies across states: ${totalWaterbodies}. `;
+
+      // Example: simple distance-based message (mock)
+      const avgDistanceKm = 50; // Replace with real calculation if available
+      if (avgDistanceKm > 100) {
+        analysisMsg += "Many villages are far from water sources. Prioritize water infrastructure.";
+      } else if (avgDistanceKm > 20) {
+        analysisMsg += "Moderate distance to water sources. Improve access and quality.";
+      } else {
+        analysisMsg += "Most villages have good proximity to water sources.";
+      }
+
+      document.getElementById("analysis-text").textContent = analysisMsg;
+    }
+
+    // Initialize Chart.js pie chart
+    const analysisCtx = document.getElementById("analysisChart").getContext("2d");
+    let analysisChart = new Chart(analysisCtx, {
+      type: "pie",
+      data: {
+        labels: Object.keys(waterbodyFiles),
+        datasets: [
+          {
+            label: "Waterbody Distribution",
+            data: [0, 0, 0, 0], // initial empty data
+            backgroundColor: ["#4da6ff", "#00d4a3", "#ffa600", "#ff4d6d"],
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: "bottom",
+            labels: {
+              font: { size: 14 },
+            },
+          },
+        },
+      },
+    });
+
+    // Load counts and update chart on page load
+    loadWaterbodyCountsAndUpdateChart();
+  </script>
+</body>
+</html>

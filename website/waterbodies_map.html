@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>India Water Resources Portal</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <style>
+        body { margin:0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background:#f4f6f8; display:flex; flex-direction:column; height:100vh; }
+        #header { text-align:center; padding:15px 20px; background:#2e86de; color:white; font-size:28px; font-weight:bold; box-shadow:0 2px 6px rgba(0,0,0,0.25); letter-spacing: 1px; }
+        #menu { text-align:center; margin:12px 0; }
+        .btn { background:#2e86de; color:white; border:none; padding:10px 18px; margin:6px 8px; cursor:pointer; border-radius:6px; font-size:15px; font-weight:600; transition:all 0.3s ease; box-shadow: 0 3px 6px rgba(46,134,222,0.4); }
+        .btn:hover { background:#1b4f72; box-shadow: 0 5px 12px rgba(27,79,114,0.6); }
+        #container { display:flex; flex:1; gap:15px; padding:15px; }
+        #map { flex:3; border:2px solid #2e86de; border-radius:10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        #recommendation-panel { flex:1; background:white; border:2px solid #2e86de; border-radius:10px; padding:20px; overflow-y:auto; box-shadow: 3px 3px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
+        #recommendation-panel h3 { margin-top:0; color:#2e86de; font-size:22px; font-weight:700; border-bottom: 2px solid #2e86de; padding-bottom: 8px; }
+        #rec-list { margin-top: 15px; flex-grow: 1; overflow-y: auto; }
+        .rec-item {
+            background: #eaf3ff;
+            border-left: 6px solid #2e86de;
+            padding: 15px 20px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(46,134,222,0.15);
+            font-size: 15px;
+            line-height: 1.5;
+            color: #1a1a1a;
+            white-space: pre-line; /* preserve newlines */
+        }
+        .rec-item b {
+            font-size: 18px;
+            color: #1b3a7a;
+        }
+        .distance {
+            font-weight: 600;
+            color: #0b5394;
+            margin-top: 8px;
+            display: inline-block;
+        }
+        /* Loading spinner */
+        #loading-spinner {
+            display: none;
+            margin: 20px auto;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #2e86de;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg);}
+            100% { transform: rotate(360deg);}
+        }
+        /* Leaflet popup style override */
+        .leaflet-popup-content-wrapper {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            color: #2e86de;
+        }
+    </style>
+</head>
+<body>
+
+<div id="header">India Water Resources Portal</div>
+
+<div id="menu">
+    <button class="btn" onclick="showState('WholeIndia')">Whole India</button>
+    <button class="btn" onclick="showState('MadhyaPradesh')">Madhya Pradesh</button>
+    <button class="btn" onclick="showState('Odisha')">Odisha</button>
+    <button class="btn" onclick="showState('Telangana')">Telangana</button>
+    <button class="btn" onclick="showState('Tripura')">Tripura</button>
+</div>
+
+<div id="container">
+    <div id="map"></div>
+    <div id="recommendation-panel">
+        <h3>Recommendations</h3>
+        <div id="loading-spinner"></div>
+        <div id="rec-list">Click on a village to see recommendation</div>
+    </div>
+</div>
+
+<script>
+    var map = L.map('map').setView([22, 79], 5);
+
+    function indiaStyle(feature){ return { fillColor:"#a8d5a2", color:"#4c9141", weight:2, fillOpacity:0.8 }; }
+    function waterStyle(feature){ return { fillColor:"#4da6ff", color:"#4da6ff", weight:1, fillOpacity:0.7 }; }
+    function villageStyle(feature){ return { radius:6, fillColor:"#ffff99", color:"#ffcc00", weight:1.5, fillOpacity:0.8 }; }
+
+    function showLoading(show) {
+        const spinner = document.getElementById('loading-spinner');
+        const recList = document.getElementById('rec-list');
+        if(show) {
+            spinner.style.display = 'block';
+            recList.style.display = 'none';
+        } else {
+            spinner.style.display = 'none';
+            recList.style.display = 'block';
+        }
+    }
+
+    function onEachFeature(feature, layer) {
+        if(feature.properties && feature.properties.name){
+            layer.bindPopup(`<b>${feature.properties.name}</b>`);
+            layer.on('click', function(){
+                const villageName = feature.properties.name;
+                showLoading(true);
+
+                const payload = { "villages":[{ "name": villageName }] };
+
+                fetch("http://127.0.0.1:5000/analyze", {
+                    method:"POST",
+                    headers: { "Content-Type":"application/json" },
+                    body: JSON.stringify(payload)
+                })
+                .then(res => res.json())
+                .then(data => {
+                    showLoading(false);
+                    let villageData = null;
+                    if(data.status==="success" && data.results.length>0) {
+                        villageData = data.results[0];
+                    }
+                    
+                    const recList = document.getElementById('rec-list');
+                    if (villageData) {
+                        recList.innerHTML = `<div class="rec-item">
+                                                <b>${villageData.village}</b><br>
+                                                <span>${villageData.recommendation}</span><br>
+                                                <span class="distance">Distance to water: ${villageData.distance_to_water} km</span>
+                                            </div>`;
+                    } else {
+                        recList.innerHTML = `<div class="rec-item"><b>${villageName}</b><br>Error fetching recommendation or data not available.</div>`;
+                    }
+                    
+                    layer.openPopup();
+                })
+                .catch(err => {
+                    showLoading(false);
+                    console.error(err);
+                    document.getElementById('rec-list').innerHTML = `<div class="rec-item"><b>${villageName}</b><br>Error fetching recommendation</div>`;
+                });
+            });
+        }
+    }
+
+    var indiaLayer;
+    fetch("./india_boundary.geojson")
+        .then(res => res.json())
+        .then(data => {
+            indiaLayer = L.geoJSON(data, { style: indiaStyle }).addTo(map);
+            map.fitBounds(indiaLayer.getBounds());
+        });
+
+    var stateLayers = {};
+    var states = {
+        "MadhyaPradesh": { water:'fixed_waterbodies.geojson', villages:'centroids_mp.geojson' },
+        "Odisha": { water:'fixed_waterbodies_od.geojson', villages:'villages_od.geojson' },
+        "Telangana": { water:'fixed_waterbodies_tl.geojson', villages:'villages_tl.geojson' },
+        "Tripura": { water:'fixed_waterbodies_tp.geojson', villages:'villages_tp.geojson' },
+        "WholeIndia": [
+            { water:'fixed_waterbodies.geojson', villages:'centroids_mp.geojson' },
+            { water:'fixed_waterbodies_od.geojson', villages:'villages_od.geojson' },
+            { water:'fixed_waterbodies_tl.geojson', villages:'villages_tl.geojson' },
+            { water:'fixed_waterbodies_tp.geojson', villages:'villages_tp.geojson' }
+        ]
+    };
+
+    function loadGeoJSON(path, style, pointToLayer){
+        return fetch(path)
+            .then(res => res.json())
+            .then(data => L.geoJSON(data, { style: style, pointToLayer: pointToLayer, onEachFeature: onEachFeature }).addTo(map))
+            .catch(err=>{console.warn("Could not load:", path); return null;});
+    }
+
+    function showState(state){
+        Object.values(stateLayers).forEach(l=>map.removeLayer(l));
+        stateLayers = {};
+        document.getElementById('rec-list').innerHTML = "Click on a village to see recommendation";
+
+        if(state==="WholeIndia"){
+            let promises = states[state].map(obj => Promise.all([
+                loadGeoJSON(obj.water, waterStyle, null),
+                loadGeoJSON(obj.villages, null, f=>L.circleMarker(f.geometry.coordinates.reverse(), villageStyle(f)))
+            ]));
+            Promise.all(promises).then(results=>{
+                let allLayers = [];
+                results.forEach(pair=>pair.forEach(layer=>{ if(layer) allLayers.push(layer); }));
+                let group = L.featureGroup(allLayers);
+                map.fitBounds(group.getBounds());
+                allLayers.forEach(layer=>stateLayers["layer"+layer._leaflet_id]=layer);
+            });
+        } else {
+            let obj = states[state];
+            Promise.all([
+                loadGeoJSON(obj.water, waterStyle, null),
+                loadGeoJSON(obj.villages, null, f=>L.circleMarker(f.geometry.coordinates.reverse(), villageStyle(f)))
+            ]).then(layers=>{
+                layers.forEach(layer=>{ if(layer) stateLayers[state+"_"+layer._leaflet_id]=layer; });
+                let group = L.featureGroup(layers.filter(l=>l));
+                map.fitBounds(group.getBounds());
+            });
+        }
+    }
+
+    // Load Whole India view by default
+    showState('WholeIndia');
+</script>
+
+</body>
+</html>
